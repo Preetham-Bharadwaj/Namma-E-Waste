@@ -197,13 +197,17 @@ export function SchedulePage() {
 
       // Fallback: use coordinates if API fails
       if (!resolved) {
+        const latStr = latitude.toFixed(4);
+        const lngStr = longitude.toFixed(4);
         resolved = {
-          addressLine: `Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-          locality: "Current Area",
+          addressLine: `GPS Location (${latStr}, ${lngStr})`,
+          locality: `Area near ${latStr}, ${lngStr}`,
           city: "Bengaluru",
           pincode: "",
         };
       }
+
+      console.log("Resolved address:", resolved);
 
       setNewAddress((current) => ({
         ...current,
