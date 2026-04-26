@@ -176,23 +176,34 @@ export function SchedulePage() {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
 
-      const response = await fetch("/api/geocode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ latitude, longitude }),
-      });
+      // Try to fetch address from API
+      let resolved;
+      try {
+        const response = await fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude, longitude }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Geocoding request failed: ${response.status}`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            resolved = parseOverpassAddress(result.data, latitude, longitude);
+          }
+        }
+      } catch (apiError) {
+        console.warn("Geocoding API failed, using fallback:", apiError);
       }
 
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || "Geocoding failed");
+      // Fallback: use coordinates if API fails
+      if (!resolved) {
+        resolved = {
+          addressLine: `Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+          locality: "Current Area",
+          city: "Bengaluru",
+          pincode: "",
+        };
       }
-
-      const data = result.data;
-      const resolved = parseOverpassAddress(data, latitude, longitude);
 
       setNewAddress((current) => ({
         ...current,
@@ -205,7 +216,7 @@ export function SchedulePage() {
       }));
     } catch (error) {
       console.error("Failed to fetch current location address:", error);
-      setLocationError("Unable to fetch current location address.");
+      setLocationError("Unable to fetch current location. Please enter address manually.");
     } finally {
       setIsFetchingLocation(false);
     }
