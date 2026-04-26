@@ -107,22 +107,34 @@ async function fetchOrderByIdViaServer(orderId: string): Promise<OrderData | nul
 }
 
 /**
- * Uploads images to Firebase Storage and returns their URLs
+ * Uploads images to Firebase Storage via backend proxy to avoid CORS
  */
 async function uploadImages(imageFiles: File[]): Promise<string[]> {
   const uploadedUrls: string[] = [];
 
-  for (const [index, file] of imageFiles.entries()) {
-    const fileName = `orders/${Date.now()}-${index}-${file.name}`;
-    const storageRef = ref(storage, fileName);
+  for (const file of imageFiles) {
+    const formData = new FormData();
+    formData.append('image', file);
 
     try {
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-      uploadedUrls.push(url);
+      const response = await serverFetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.url) {
+        uploadedUrls.push(result.url);
+      } else {
+        throw new Error('Invalid upload response');
+      }
     } catch (error) {
-      console.error(`Failed to upload image ${index}:`, error);
-      // Continue with the remaining files instead of failing the whole order flow.
+      console.error('Failed to upload image:', error);
+      // Continue with remaining files
     }
   }
 
@@ -142,16 +154,13 @@ export async function createOrder(
   let imageUrls: string[] = [];
 
   // Upload images if files are provided
-  if (imageFiles && imageFiles.length > 0 && !shouldSkipStorageUpload()) {
+  if (imageFiles && imageFiles.length > 0) {
     try {
       imageUrls = await uploadImages(imageFiles);
     } catch (error) {
       console.error("Image upload failed:", error);
       imageUrls = [];
     }
-  } else if (imageFiles && imageFiles.length > 0 && shouldSkipStorageUpload()) {
-    console.warn("Skipping Firebase Storage upload in local dev. Set VITE_ENABLE_STORAGE_UPLOAD=true after CORS is configured.");
-    imageUrls = [];
   } else if (orderData.images) {
     // Use provided image URLs (e.g., base64 or existing URLs)
     imageUrls = orderData.images;

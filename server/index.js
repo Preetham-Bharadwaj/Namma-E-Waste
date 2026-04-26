@@ -309,6 +309,33 @@ app.post('/api/geocode', async (req, res) => {
   }
 });
 
+// Firebase Storage Upload Proxy to avoid CORS issues
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const fileName = `orders/${Date.now()}-${req.file.originalname}`;
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(fileName);
+
+    await file.save(req.file.buffer, {
+      contentType: req.file.mimetype,
+    });
+
+    const [url] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+    });
+
+    res.json({ success: true, url });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Export for Vercel serverless function
 export default app;
 
