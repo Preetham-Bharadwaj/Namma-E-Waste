@@ -1,0 +1,31 @@
+# env
+.env*
+
+# node
+node_modules/
+
+# build
+dist/
+build/
+
+# logs
+*.log
+
+# system
+.DS_Store
+
+# firebase admin
+serviceAccountKey.json
+firebase-adminsdk.json
+
+# IDE
+.vscode/
+.idea/
+
+# cache
+.vite/
+.cache/
+tsconfig.tsbuildinfo
+
+# temp
+scratch/

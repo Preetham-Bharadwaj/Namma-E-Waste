@@ -1,0 +1,30 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+@import 'leaflet/dist/leaflet.css';
+
+/* Mobile alignment fixes for SchedulePage */
+@media (max-width: 768px) {
+  .schedule-container {
+    padding: 16px;
+  }
+  
+  .schedule-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .schedule-button {
+    width: 100%;
+  }
+  
+  .schedule-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+}
