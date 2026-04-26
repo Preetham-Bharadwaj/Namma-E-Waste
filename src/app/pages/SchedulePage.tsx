@@ -176,20 +176,31 @@ export function SchedulePage() {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
 
-      // Try to fetch address from API
+      // Try to fetch address from Nominatim API (client-side, supports CORS)
       let resolved;
       try {
-        const response = await fetch("/api/geocode", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ latitude, longitude }),
-        });
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          { headers: { "Accept-Language": "en" } }
+        );
 
         if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            resolved = parseOverpassAddress(result.data, latitude, longitude);
-          }
+          const data = await response.json();
+          const address = data.address || {};
+          
+          // Build address from components
+          const houseNumber = address.house_number || "";
+          const road = address.road || address.street || address.pedestrian || "";
+          const suburb = address.suburb || address.neighbourhood || address.district || "Current Area";
+          const city = address.city || address.town || address.village || address.county || "Bengaluru";
+          const postcode = address.postcode || "";
+          
+          resolved = {
+            addressLine: [houseNumber, road].filter(Boolean).join(" ") || `Location at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            locality: suburb,
+            city: city,
+            pincode: postcode,
+          };
         }
       } catch (apiError) {
         console.warn("Geocoding API failed, using fallback:", apiError);
