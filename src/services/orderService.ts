@@ -113,13 +113,28 @@ async function uploadImages(imageFiles: File[]): Promise<string[]> {
   const uploadedUrls: string[] = [];
 
   for (const file of imageFiles) {
-    const formData = new FormData();
-    formData.append('image', file);
-
     try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
       const response = await serverFetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64,
+          fileName: `orders/${Date.now()}-${file.name}`,
+          mimeType: file.type,
+        }),
       });
 
       if (!response.ok) {

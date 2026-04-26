@@ -1,4 +1,3 @@
-import multer from 'multer';
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin from environment variables
@@ -21,11 +20,13 @@ if (!admin.apps.length) {
   });
 }
 
-const upload = multer({
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
   },
-});
+};
 
 export default async function handler(req, res) {
   // Handle CORS
@@ -42,30 +43,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    upload.single('image')(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ success: false, error: 'File upload error' });
-      }
+    const { image, fileName, mimeType } = req.body;
 
-      if (!req.file) {
-        return res.status(400).json({ success: false, error: 'No file uploaded' });
-      }
+    if (!image) {
+      return res.status(400).json({ success: false, error: 'No image data provided' });
+    }
 
-      const fileName = `orders/${Date.now()}-${req.file.originalname}`;
-      const bucket = admin.storage().bucket();
-      const file = bucket.file(fileName);
+    // Convert base64 to buffer
+    const buffer = Buffer.from(image, 'base64');
+    const name = fileName || `orders/${Date.now()}.jpg`;
+    const contentType = mimeType || 'image/jpeg';
 
-      await file.save(req.file.buffer, {
-        contentType: req.file.mimetype,
-      });
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(name);
 
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
-      });
-
-      res.json({ success: true, url });
+    await file.save(buffer, {
+      contentType,
     });
+
+    const [url] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+    });
+
+    res.json({ success: true, url });
   } catch (error) {
     console.error("Upload error:", error);
     res.status(500).json({ success: false, error: error.message });
