@@ -17,6 +17,7 @@ build/
 # firebase admin
 serviceAccountKey.json
 firebase-adminsdk.json
+firebase.json
 
 # IDE
 .vscode/
