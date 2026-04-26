@@ -176,30 +176,22 @@ export function SchedulePage() {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
 
-      const overpassQuery = `
-        [out:json][timeout:25];
-        (
-          node(around:150,${latitude},${longitude})["addr:housenumber"];
-          way(around:150,${latitude},${longitude})["addr:housenumber"];
-          relation(around:150,${latitude},${longitude})["addr:housenumber"];
-          node(around:250,${latitude},${longitude})["addr:street"];
-          way(around:250,${latitude},${longitude})["addr:street"];
-          relation(around:250,${latitude},${longitude})["addr:street"];
-        );
-        out tags center 10;
-      `;
-
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
+      const response = await fetch("/api/geocode", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        body: `data=${encodeURIComponent(overpassQuery)}`,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude, longitude }),
       });
 
       if (!response.ok) {
-        throw new Error(`Overpass request failed: ${response.status}`);
+        throw new Error(`Geocoding request failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Geocoding failed");
+      }
+
+      const data = result.data;
       const resolved = parseOverpassAddress(data, latitude, longitude);
 
       setNewAddress((current) => ({
@@ -284,9 +276,9 @@ export function SchedulePage() {
         }
       }
 
-      console.log("🚀 Saving order...");
+      console.log("Saving order...");
       const orderId = await createOrder(orderData, imageFiles);
-      console.log("✅ Order saved:", orderId);
+      console.log("Order saved:", orderId);
       localStorage.setItem("activeOrderId", orderId);
       navigate("/app/track");
     } catch (error) {
