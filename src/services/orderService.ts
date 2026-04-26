@@ -107,49 +107,23 @@ async function fetchOrderByIdViaServer(orderId: string): Promise<OrderData | nul
 }
 
 /**
- * Uploads images to Firebase Storage via backend proxy to avoid CORS
+ * Uploads images to Firebase Storage directly (client-side)
+ * Note: For prototype demo. Configure CORS on Firebase Storage for production.
  */
 async function uploadImages(imageFiles: File[]): Promise<string[]> {
   const uploadedUrls: string[] = [];
 
-  for (const file of imageFiles) {
+  for (const [index, file] of imageFiles.entries()) {
+    const fileName = `orders/${Date.now()}-${index}-${file.name}`;
+    const storageRef = ref(storage, fileName);
+
     try {
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
-          const base64Data = result.split(',')[1];
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const response = await serverFetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64,
-          fileName: `orders/${Date.now()}-${file.name}`,
-          mimeType: file.type,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.success && result.url) {
-        uploadedUrls.push(result.url);
-      } else {
-        throw new Error('Invalid upload response');
-      }
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      uploadedUrls.push(url);
     } catch (error) {
-      console.error('Failed to upload image:', error);
-      // Continue with remaining files
+      console.error(`Failed to upload image ${index}:`, error);
+      // Continue with the remaining files instead of failing the whole order flow.
     }
   }
 
