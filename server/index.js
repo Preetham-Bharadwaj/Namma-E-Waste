@@ -5,14 +5,22 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import admin from 'firebase-admin';
-import { readFile } from 'fs/promises';
 
 dotenv.config();
 
-// Initialize Firebase Admin
-const serviceAccount = JSON.parse(
-  await readFile(new URL('./firebase.json', import.meta.url))
-);
+// Initialize Firebase Admin from environment variables
+const serviceAccount = {
+  type: "service_account",
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  client_id: process.env.FIREBASE_CLIENT_ID,
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.FIREBASE_CLIENT_EMAIL}`
+};
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -20,15 +28,17 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// Test Firestore Connection on Startup
-db.collection('system_tests').doc('connection_check').set({
-  lastStartup: new Date().toISOString(),
-  message: "Firebase connected successfully from server!"
-}).then(() => {
-  console.log("✓ Firestore connection verified - 'system_tests' document updated.");
-}).catch(err => {
-  console.error("✗ Firestore connection failed:", err);
-});
+// Skip startup test in serverless environment
+if (process.env.NODE_ENV !== 'production') {
+  db.collection('system_tests').doc('connection_check').set({
+    lastStartup: new Date().toISOString(),
+    message: "Firebase connected successfully from server!"
+  }).then(() => {
+    console.log("✓ Firestore connection verified - 'system_tests' document updated.");
+  }).catch(err => {
+    console.error("✗ Firestore connection failed:", err);
+  });
+}
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -299,6 +309,12 @@ app.post('/api/geocode', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Namma E-Waste AI Estimation Service running on port ${port}`);
-});
+// Export for Vercel serverless function
+export default app;
+
+// Keep listen for local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Namma E-Waste AI Estimation Service running on port ${port}`);
+  });
+}
