@@ -239,9 +239,15 @@ export function TrackPage() {
 
           {/* Primary Action Button */}
           <div className="pt-2">
-            <button type="button" className="w-full rounded-[14px] bg-emerald-600 py-4 text-[13px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg active:scale-95">
-              Contact Collector
-            </button>
+            {isAssigned ? (
+              <button type="button" className="w-full rounded-[14px] bg-emerald-600 py-4 text-[13px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg active:scale-95">
+                Contact Collector
+              </button>
+            ) : (
+              <button type="button" disabled className="w-full rounded-[14px] bg-slate-300 py-4 text-[13px] font-black uppercase tracking-widest text-slate-500 shadow-md cursor-not-allowed">
+                Waiting for Assignment...
+              </button>
+            )}
             {isCompleted && (
               <button type="button" onClick={() => completePickup(pickup.id)} className="w-full mt-3 rounded-[14px] bg-white border border-slate-200 py-4 text-[13px] font-black uppercase tracking-widest text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95">
                 Move to History
