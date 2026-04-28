@@ -1,4 +1,7 @@
 import { useNavigate } from "react-router";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   ArrowRight,
   Award,
@@ -15,9 +18,21 @@ import {
   Zap,
 } from "lucide-react";
 import imgWasteManagement from "figma:asset/48ed888e1c0283497a8826e19bca83cbe29ac571.png";
-import imgMapSection from "figma:asset/4e25cfc536ae424cf222af830aa970d86987621b.png";
 import imgAbstractEWaste from "figma:asset/fd8227291bfb8e8adc0ff02f726d63758cea6c03.png";
 import { Logo } from "../components/Logo";
+
+// Fix Leaflet marker icons
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const features = [
   {
@@ -80,6 +95,50 @@ const newFeatures = [
     text: "Terms consent, certificate download, and certified data wipe messaging make it safer.",
   },
 ];
+
+// Bangalore Map Component
+function BangaloreMap() {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstance.current) return;
+
+    // Bangalore coordinates
+    const bangaloreCoords: [number, number] = [12.9716, 77.5946];
+
+    mapInstance.current = L.map(mapRef.current, {
+      center: bangaloreCoords,
+      zoom: 12,
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(mapInstance.current);
+
+    // Add marker for Bangalore
+    L.marker(bangaloreCoords).addTo(mapInstance.current)
+      .bindPopup("<b>Bengaluru</b><br>E-waste pickup available here")
+      .openPopup();
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div 
+      ref={mapRef} 
+      className="w-full h-full min-h-[300px] rounded-[20px] sm:rounded-[28px] border border-[#d6e7df] shadow-[0_18px_50px_rgba(27,94,32,0.12)]"
+      style={{ zIndex: 1 }}
+    />
+  );
+}
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -173,7 +232,7 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-          <img src={imgMapSection} alt="Bengaluru pickup tracking preview" className="w-full rounded-[20px] sm:rounded-[28px] border border-[#d6e7df] shadow-[0_18px_50px_rgba(27,94,32,0.12)]" />
+          <BangaloreMap />
         </div>
       </section>
 
