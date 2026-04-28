@@ -36,6 +36,12 @@ function getDates() {
   });
 }
 
+function formatDateLabel(dateValue: string): string {
+  const date = new Date(dateValue);
+  if (isNaN(date.getTime())) return dateValue;
+  return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}
+
 function pickTag(tags: Record<string, string> | undefined, keys: string[]) {
   if (!tags) return "";
   for (const key of keys) {
@@ -276,10 +282,9 @@ export function SchedulePage() {
         phone: finalAddress.phone,
       },
       schedule: {
-        date: dates.find((item) => item.value === date)?.label || date,
+        date: dates.find((item) => item.value === date)?.label || formatDateLabel(date),
         slot: slot,
         slotLabel: selectedSlot.label,
-        rawDate: date,
       },
       pricing: {
         estimated: aiEstimatedPrice ?? selectedCategory.estimate,
