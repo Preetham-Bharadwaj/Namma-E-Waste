@@ -154,9 +154,11 @@ export function TrackPage() {
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Pickup Partner</span>
                 </div>
               </div>
-              <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" aria-label="Call partner">
-                <Phone size={18} strokeWidth={2.5} />
-              </button>
+              {isAssigned && (
+                <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" aria-label="Call partner">
+                  <Phone size={18} strokeWidth={2.5} />
+                </button>
+              )}
             </div>
           </section>
 
