@@ -279,6 +279,7 @@ export function SchedulePage() {
         date: dates.find((item) => item.value === date)?.label || date,
         slot: slot,
         slotLabel: selectedSlot.label,
+        rawDate: date,
       },
       pricing: {
         estimated: aiEstimatedPrice ?? selectedCategory.estimate,
